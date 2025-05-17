@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Dashboard de Dados</h1>
+
+    <form action="/enviar" method="post">
+        <input type="text" name="valor" placeholder="Digite um valor" required>
+        <button type="submit">Enviar</button>
+    </form>
+
+    <h2>Dados recebidos:</h2>
+    <ul>
+        {% for item in dados %}
+        <li>{{ item }}</li>
+        {% else %}
+        <li>Nenhum dado recebido ainda.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
