@@ -1,212 +1,143 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <title>Dashboard IoT - Temperatura & Pressão</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            background: #f7f9fc;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            padding: 25px;
-        }
-        h1 {
-            text-align: center;
-            font-weight: 700;
-            color: #222;
-            margin-bottom: 35px;
-        }
-        .card {
-            box-shadow: 0 4px 10px rgb(0 0 0 / 0.1);
-            border-radius: 12px;
-            margin-bottom: 30px;
-            background: white;
-            padding: 20px;
-        }
-        .stat-label {
-            font-size: 1.1rem;
-            color: #555;
-            font-weight: 600;
-        }
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: #111;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard IIoT Industrial</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
-    <h1>Dashboard IoT - Temperatura & Pressão</h1>
-    <div class="container">
+<body class="bg-gray-100 font-sans p-6">
+  <h1 class="text-3xl font-bold mb-6">Monitoramento Industrial IIoT</h1>
 
-        <div class="row g-4">
-            <div class="col-md-6">
-                <div class="card">
-                    <div>
-                        <p class="stat-label">Temperatura Atual</p>
-                        <p id="temp-ultima" class="stat-value">-- °C</p>
-                    </div>
-                    <canvas id="tempChart"></canvas>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div>
-                        <p class="stat-label">Pressão Atual</p>
-                        <p id="pressao-ultima" class="stat-value">-- hPa</p>
-                    </div>
-                    <canvas id="pressaoChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h4>Resumo Estatístico (Últimos dados)</h4>
-            <div class="row text-center mt-3">
-                <div class="col-md-4">
-                    <p class="stat-label">Temperatura Média</p>
-                    <p id="temp-media" class="stat-value">-- °C</p>
-                </div>
-                <div class="col-md-4">
-                    <p class="stat-label">Pressão Média</p>
-                    <p id="pressao-media" class="stat-value">-- hPa</p>
-                </div>
-                <div class="col-md-4">
-                    <p class="stat-label">Total de Leituras</p>
-                    <p id="total-leituras" class="stat-value">0</p>
-                </div>
-            </div>
-        </div>
-
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
+    <div class="bg-white rounded shadow p-6 text-center">
+      <h2 class="text-xl font-semibold text-red-600 mb-2">Temperatura Atual</h2>
+      <p id="tempAtual" class="text-4xl font-bold text-red-600">-- °C</p>
     </div>
+    <div class="bg-white rounded shadow p-6 text-center">
+      <h2 class="text-xl font-semibold text-blue-600 mb-2">Pressão Atual</h2>
+      <p id="pressaoAtual" class="text-4xl font-bold text-blue-600">-- bar</p>
+    </div>
+    <div class="bg-white rounded shadow p-6 text-center">
+      <h2 class="text-xl font-semibold text-green-600 mb-2">Volume Total Corrigido</h2>
+      <p id="volumeTotal" class="text-4xl font-bold text-green-600">-- nm³</p>
+    </div>
+  </div>
 
-<script>
-    const tempCtx = document.getElementById('tempChart').getContext('2d');
-    const pressaoCtx = document.getElementById('pressaoChart').getContext('2d');
+  <div class="max-w-4xl mx-auto mt-10">
+    <h2 class="text-2xl font-bold mb-4">Análise Temporal</h2>
+    <canvas id="tempChart" class="mb-10" height="150"></canvas>
+    <canvas id="pressChart" class="mb-10" height="150"></canvas>
+    <canvas id="volChart" height="150"></canvas>
+  </div>
 
-    const tempChart = new Chart(tempCtx, {
+  <script>
+    let tempChart, pressChart, volChart;
+
+    function criarGrafico(id, label, cor, unidade) {
+        const ctx = document.getElementById(id).getContext('2d');
+        return new Chart(ctx, {
         type: 'line',
         data: {
-            labels: [],
-            datasets: [{
-                label: 'Temperatura (°C)',
-                data: [],
-                borderColor: '#e74c3c',
-                backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0,
-            }]
+        labels: [],
+        datasets: [{
+            label: `${label} (${unidade})`,
+            data: [],
+            borderColor: cor,
+            backgroundColor: cor.replace('1)', '0.1)'),
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointHoverRadius: 6
+        }]
         },
         options: {
-            responsive: true,
-            scales: {
-                x: {
-                    title: { display: true, text: 'Horário' },
-                    ticks: { maxTicksLimit: 10 },
-                    type: 'time',
-                    time: {
-                        tooltipFormat: 'HH:mm:ss',
-                        unit: 'minute',
-                        displayFormats: { minute: 'HH:mm' }
-                    }
-                },
-                y: {
-                    title: { display: true, text: '°C' },
-                    suggestedMin: 0,
-                    suggestedMax: 50
-                }
-            },
-            plugins: { legend: { display: true } }
-        }
-    });
-
-    const pressaoChart = new Chart(pressaoCtx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: 'Pressão (hPa)',
-                data: [],
-                borderColor: '#2980b9',
-                backgroundColor: 'rgba(41, 128, 185, 0.2)',
-                fill: true,
-                tension: 0.3,
-                pointRadius: 0,
-            }]
+        responsive: true,
+        interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
         },
-        options: {
-            responsive: true,
-            scales: {
-                x: {
-                    title: { display: true, text: 'Horário' },
-                    ticks: { maxTicksLimit: 10 },
-                    type: 'time',
-                    time: {
-                        tooltipFormat: 'HH:mm:ss',
-                        unit: 'minute',
-                        displayFormats: { minute: 'HH:mm' }
-                    }
-                },
-                y: {
-                    title: { display: true, text: 'hPa' },
-                    suggestedMin: 900,
-                    suggestedMax: 1100
-                }
+        plugins: {
+            legend: { display: true },
+            tooltip: { enabled: true }
+        },
+        scales: {
+            x: { 
+            title: { display: true, text: 'Timestamp' },
+            ticks: { maxRotation: 45, minRotation: 45 }
             },
-            plugins: { legend: { display: true } }
-        }
-    });
-
-    function calcMedia(arr) {
-        if (!arr.length) return 0;
-        const sum = arr.reduce((acc, val) => acc + val, 0);
-        return (sum / arr.length).toFixed(2);
-    }
-
-    async function atualizarDashboard() {
-        try {
-            const res = await fetch('/dados');
-            const dados = await res.json();
-
-            if (!dados.length) {
-                return;
+            y: {
+            title: { display: true, text: `${label} (${unidade})` },
+            beginAtZero: false
             }
-
-            // converter timestamps em objetos Date
-            const labels = dados.map(d => new Date(d.timestamp));
-            const temperaturas = dados.map(d => d.temperatura);
-            const pressao = dados.map(d => d.pressao);
-
-            // Atualiza gráficos
-            tempChart.data.labels = labels;
-            tempChart.data.datasets[0].data = temperaturas;
-            tempChart.update();
-
-            pressaoChart.data.labels = labels;
-            pressaoChart.data.datasets[0].data = pressao;
-            pressaoChart.update();
-
-            // Atualiza estatísticas e valores atuais
-            document.getElementById('temp-ultima').textContent = temperaturas[temperaturas.length - 1] + " °C";
-            document.getElementById('pressao-ultima').textContent = pressao[pressao.length - 1] + " hPa";
-
-            document.getElementById('temp-media').textContent = calcMedia(temperaturas) + " °C";
-            document.getElementById('pressao-media').textContent = calcMedia(pressao) + " hPa";
-
-            document.getElementById('total-leituras').textContent = dados.length;
-
-        } catch (error) {
-            console.error("Erro ao atualizar dashboard:", error);
         }
+        }
+    });
     }
 
-    // Atualiza a cada 3 segundos para dashboard fluido
-    setInterval(atualizarDashboard, 3000);
-    atualizarDashboard();
+    // Converte Pa para bar
+    function paParaBar(pa) {
+      return pa / 100000;
+    }
 
-</script>
+    async function atualizarGraficos() {
+      try {
+        const res = await fetch('/api/dados');
+        const data = await res.json();
 
+        const dados = data.dados;
+        const volumeTotal = data.volume_total_corrigido;
+
+        if (dados.length === 0) return;
+
+        const timestamps = dados.map(d => d.timestamp);
+        const temperaturas = dados.map(d => d.temperatura);
+        const pressaoBar = dados.map(d => paParaBar(d.pressao));
+        const volumes = [];
+
+        const VOLUME = 1;
+        const PATM = 1;
+        const STD_PATM = 1;
+        const STD_TEMP = 20;
+
+        for (let i = 0; i < dados.length; i++) {
+          const vol = (VOLUME * (pressaoBar[i] + PATM * 1.01325) * (STD_TEMP + 273.15)) / 
+                      ((temperaturas[i] + 273.15) * (STD_PATM * 1.01325));
+          volumes.push(vol);
+        }
+
+        // Atualiza valores atuais
+        document.getElementById('tempAtual').textContent = temperaturas.at(-1).toFixed(2) + ' °C';
+        document.getElementById('pressaoAtual').textContent = pressaoBar.at(-1).toFixed(3) + ' bar';
+        document.getElementById('volumeTotal').textContent = volumeTotal.toFixed(2) + ' nm³';
+
+        // Inicializa gráficos se necessário
+        if (!tempChart) tempChart = criarGrafico('tempChart', 'Temperatura', 'rgb(239,68,68)', '°C');
+        if (!pressChart) pressChart = criarGrafico('pressChart', 'Pressão', 'rgb(59,130,246)', 'bar');
+        if (!volChart) volChart = criarGrafico('volChart', 'Volume Corrigido', 'rgb(34,197,94)', 'nm³/h');
+
+        // Atualiza dados dos gráficos
+        tempChart.data.labels = timestamps;
+        tempChart.data.datasets[0].data = temperaturas;
+        tempChart.update();
+
+        pressChart.data.labels = timestamps;
+        pressChart.data.datasets[0].data = pressaoBar;
+        pressChart.update();
+
+        volChart.data.labels = timestamps;
+        volChart.data.datasets[0].data = volumes;
+        volChart.update();
+
+      } catch (err) {
+        console.error('Erro ao atualizar gráficos:', err);
+      }
+    }
+
+    atualizarGraficos();
+    setInterval(atualizarGraficos, 2000);
+  </script>
 </body>
 </html>
