@@ -36,9 +36,9 @@ def carregar_volume_total() -> float:
             return data.get("volume_total_corrigido", 0.0)
     return 0.0
 
-def calcular_volume_corrigido(pressao_pa: float, temperatura_c: float) -> float:
-    pressao_bar = pressao_pa / 100000
-    vol_corr = (VOLUME * (pressao_bar + PATM * 1.01325) * (STD_TEMP + 273.15)) / \
+def calcular_volume_corrigido(pressao_psi: float, temperatura_c: float) -> float:
+    pressao_ATM = pressao_psi * 0.068046
+    vol_corr = (VOLUME * (pressao_ATM + PATM * 1.01325) * (STD_TEMP + 273.15)) / \
                ((temperatura_c + 273.15) * (STD_PATM * 1.01325))
     return vol_corr
 

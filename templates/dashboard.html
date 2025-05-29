@@ -110,12 +110,12 @@
 
         // Atualiza valores atuais
         document.getElementById('tempAtual').textContent = temperaturas.at(-1).toFixed(2) + ' °C';
-        document.getElementById('pressaoAtual').textContent = pressaoBar.at(-1).toFixed(3) + ' bar';
+        document.getElementById('pressaoAtual').textContent = pressaoBar.at(-1).toFixed(3) + ' PSI';
         document.getElementById('volumeTotal').textContent = volumeTotal.toFixed(2) + ' nm³';
 
         // Inicializa gráficos se necessário
         if (!tempChart) tempChart = criarGrafico('tempChart', 'Temperatura', 'rgb(239,68,68)', '°C');
-        if (!pressChart) pressChart = criarGrafico('pressChart', 'Pressão', 'rgb(59,130,246)', 'bar');
+        if (!pressChart) pressChart = criarGrafico('pressChart', 'Pressão', 'rgb(59,130,246)', 'PSI');
         if (!volChart) volChart = criarGrafico('volChart', 'Volume Corrigido', 'rgb(34,197,94)', 'nm³/h');
 
         // Atualiza dados dos gráficos
