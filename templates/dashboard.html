@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -25,6 +26,12 @@
     </div>
   </div>
 
+  <!-- Botão para exportar CSV -->
+  <div class="max-w-4xl mx-auto mt-6 flex justify-end">
+    <button id="btnExportar" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold">Exportar Dados CSV</button>
+  </div>
+
+  <!-- Gráficos temporais -->
   <div class="max-w-4xl mx-auto mt-10">
     <h2 class="text-2xl font-bold mb-4">Análise Temporal</h2>
     <canvas id="tempChart" class="mb-10" height="150"></canvas>
@@ -32,16 +39,45 @@
     <canvas id="volChart" height="150"></canvas>
   </div>
 
+  <!-- Análises avançadas -->
+  <div class="max-w-6xl mx-auto mt-12 grid grid-cols-1 xl:grid-cols-2 gap-10">
+    <div class="bg-white rounded shadow p-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4">Temperatura x Volume Corrigido</h3>
+      <canvas id="scatterTempVol" height="220"></canvas>
+    </div>
+    <div class="bg-white rounded shadow p-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4">Pressão x Volume Corrigido</h3>
+      <canvas id="scatterPressVol" height="220"></canvas>
+    </div>
+    <div class="bg-white rounded shadow p-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4">Pressão x Temperatura</h3>
+      <canvas id="scatterPressTemp" height="220"></canvas>
+    </div>
+    <div class="bg-white rounded shadow p-6 xl:col-span-2">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4">Histograma de Volume Corrigido</h3>
+      <canvas id="histVolume" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- Gráfico de barras Volume por dia -->
+  <div class="max-w-4xl mx-auto mt-12">
+    <div class="bg-white rounded shadow p-6">
+      <h3 class="text-lg font-semibold text-gray-700 mb-4">Volume Corrigido Acumulado por Dia</h3>
+      <canvas id="barVolumeDia" height="180"></canvas>
+    </div>
+  </div>
+
   <script>
-    let tempChart, pressChart, volChart;
+    let tempChart, pressChart, volChart, scatterTempVol, scatterPressVol, scatterPressTemp;
+    let barVolumeDia, histVolume;
 
     function criarGrafico(id, label, cor, unidade) {
-        const ctx = document.getElementById(id).getContext('2d');
-        return new Chart(ctx, {
+      const ctx = document.getElementById(id).getContext('2d');
+      return new Chart(ctx, {
         type: 'line',
         data: {
-        labels: [],
-        datasets: [{
+          labels: [],
+          datasets: [{
             label: `${label} (${unidade})`,
             data: [],
             borderColor: cor,
@@ -50,36 +86,150 @@
             tension: 0.3,
             pointRadius: 3,
             pointHoverRadius: 6
-        }]
+          }]
         },
         options: {
-        responsive: true,
-        interaction: {
-            mode: 'nearest',
-            axis: 'x',
-            intersect: false
-        },
-        plugins: {
+          responsive: true,
+          interaction: { mode: 'nearest', axis: 'x', intersect: false },
+          plugins: {
             legend: { display: true },
             tooltip: { enabled: true }
-        },
-        scales: {
+          },
+          scales: {
             x: { 
-            title: { display: true, text: 'Timestamp' },
-            ticks: { maxRotation: 45, minRotation: 45 }
+              title: { display: true, text: 'Timestamp' },
+              ticks: { maxRotation: 45, minRotation: 45 }
             },
             y: {
-            title: { display: true, text: `${label} (${unidade})` },
-            beginAtZero: false
+              title: { display: true, text: `${label} (${unidade})` },
+              beginAtZero: false
             }
+          }
         }
-        }
-    });
+      });
     }
 
-    // Converte Pa para bar
-    function paParaBar(pa) {
-      return pa / 100000;
+    function criarScatter(id, label, cor, labelX, labelY) {
+      const ctx = document.getElementById(id).getContext('2d');
+      return new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [{
+            label: label,
+            data: [],
+            backgroundColor: cor,
+            pointRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true }
+          },
+          scales: {
+            x: { title: { display: true, text: labelX } },
+            y: { title: { display: true, text: labelY } }
+          }
+        }
+      });
+    }
+
+    function criarBarra(id, label, cor, unidade) {
+      const ctx = document.getElementById(id).getContext('2d');
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: label,
+            data: [],
+            backgroundColor: cor,
+            borderColor: cor,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true }
+          },
+          scales: {
+            x: { title: { display: true, text: 'Data' } },
+            y: { title: { display: true, text: unidade }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function criarHistograma(id, label, cor) {
+      const ctx = document.getElementById(id).getContext('2d');
+      return new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [],
+          datasets: [{
+            label: label,
+            data: [],
+            backgroundColor: cor,
+            borderColor: cor,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: true } },
+          scales: {
+            x: { title: { display: true, text: 'Intervalo' } },
+            y: { title: { display: true, text: 'Frequência' }, beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    function paParaBar(pa) { return pa / 100000; }
+
+    function dataLegivel(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ' +
+             d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    }
+    function dataDDMM(iso) {
+      const d = new Date(iso);
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    }
+
+    function gerarHistograma(valores, bins = 8) {
+      if (!valores.length) return { labels: [], dados: [] };
+      const min = Math.min(...valores), max = Math.max(...valores);
+      const largura = (max - min) / bins;
+      let labels = [], dados = Array(bins).fill(0);
+      for (let i = 0; i < bins; i++) {
+        const ini = min + i * largura;
+        const fim = ini + largura;
+        labels.push(`${ini.toFixed(2)} - ${fim.toFixed(2)}`);
+      }
+      valores.forEach(val => {
+        let idx = Math.floor((val - min) / largura);
+        if (idx === bins) idx = bins - 1;
+        dados[idx]++;
+      });
+      return { labels, dados };
+    }
+
+    function exportarCSV(dados) {
+      if (!dados.length) return;
+      const campos = Object.keys(dados[0]);
+      const csv = [
+        campos.join(','),
+        ...dados.map(d => campos.map(k => d[k]).join(','))
+      ].join('');
+      const blob = new Blob([csv], {type: 'text/csv'});
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = "dados_iiot.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     async function atualizarGraficos() {
@@ -92,33 +242,34 @@
 
         if (dados.length === 0) return;
 
-        const timestamps = dados.map(d => d.timestamp);
+        // Datas formatadas
+        const timestamps = dados.map(d => dataLegivel(d.timestamp));
         const temperaturas = dados.map(d => d.temperatura);
         const pressaoBar = dados.map(d => paParaBar(d.pressao));
         const volumes = [];
 
-        const VOLUME = 1;
-        const PATM = 1;
-        const STD_PATM = 1;
-        const STD_TEMP = 20;
-
+        const VOLUME = 1, PATM = 1, STD_PATM = 1, STD_TEMP = 20;
         for (let i = 0; i < dados.length; i++) {
-          const vol = (VOLUME * (pressaoBar[i] + PATM * 1.01325) * (STD_TEMP + 273.15)) / 
+          const vol = (VOLUME * (pressaoBar[i] + PATM * 1.01325) * (STD_TEMP + 273.15)) /
                       ((temperaturas[i] + 273.15) * (STD_PATM * 1.01325));
           volumes.push(vol);
         }
 
-        // Atualiza valores atuais
         document.getElementById('tempAtual').textContent = temperaturas.at(-1).toFixed(2) + ' °C';
-        document.getElementById('pressaoAtual').textContent = pressaoBar.at(-1).toFixed(3) + ' PSI';
+        document.getElementById('pressaoAtual').textContent = pressaoBar.at(-1).toFixed(3) + ' bar';
         document.getElementById('volumeTotal').textContent = volumeTotal.toFixed(2) + ' nm³';
 
         // Inicializa gráficos se necessário
         if (!tempChart) tempChart = criarGrafico('tempChart', 'Temperatura', 'rgb(239,68,68)', '°C');
-        if (!pressChart) pressChart = criarGrafico('pressChart', 'Pressão', 'rgb(59,130,246)', 'PSI');
+        if (!pressChart) pressChart = criarGrafico('pressChart', 'Pressão', 'rgb(59,130,246)', 'bar');
         if (!volChart) volChart = criarGrafico('volChart', 'Volume Corrigido', 'rgb(34,197,94)', 'nm³/h');
+        if (!scatterTempVol) scatterTempVol = criarScatter('scatterTempVol', 'Temperatura x Volume', 'rgba(239,68,68,0.7)', 'Temperatura (°C)', 'Volume Corrigido (nm³/h)');
+        if (!scatterPressVol) scatterPressVol = criarScatter('scatterPressVol', 'Pressão x Volume', 'rgba(59,130,246,0.7)', 'Pressão (bar)', 'Volume Corrigido (nm³/h)');
+        if (!scatterPressTemp) scatterPressTemp = criarScatter('scatterPressTemp', 'Pressão x Temperatura', 'rgba(246,191,59,0.7)', 'Pressão (bar)', 'Temperatura (°C)');
+        if (!barVolumeDia) barVolumeDia = criarBarra('barVolumeDia', 'Volume Corrigido por Dia', 'rgba(34,197,94,0.7)', 'nm³/h');
+        if (!histVolume) histVolume = criarHistograma('histVolume', 'Histograma Volume Corrigido', 'rgba(34,197,94,0.7)');
 
-        // Atualiza dados dos gráficos
+        // Atualiza gráficos de linha
         tempChart.data.labels = timestamps;
         tempChart.data.datasets[0].data = temperaturas;
         tempChart.update();
@@ -130,6 +281,43 @@
         volChart.data.labels = timestamps;
         volChart.data.datasets[0].data = volumes;
         volChart.update();
+
+        // Scatter: Temperatura x Volume Corrigido
+        scatterTempVol.data.datasets[0].data = temperaturas.map((t, i) => ({ x: t, y: volumes[i] }));
+        scatterTempVol.update();
+
+        // Scatter: Pressão x Volume Corrigido
+        scatterPressVol.data.datasets[0].data = pressaoBar.map((p, i) => ({ x: p, y: volumes[i] }));
+        scatterPressVol.update();
+
+        // Scatter: Pressão x Temperatura
+        scatterPressTemp.data.datasets[0].data = pressaoBar.map((p, i) => ({ x: p, y: temperaturas[i] }));
+        scatterPressTemp.update();
+
+        // Gráfico de barras: Volume Corrigido por dia (datas dd/MM)
+        const volumePorDia = {};
+        for (let i = 0; i < dados.length; i++) {
+          const dia = dataDDMM(dados[i].timestamp);
+          if (!volumePorDia[dia]) volumePorDia[dia] = 0;
+          volumePorDia[dia] += volumes[i];
+        }
+        const datasOrdenadas = Object.keys(volumePorDia).sort((a, b) => {
+          const [da, ma] = a.split('/').map(Number);
+          const [db, mb] = b.split('/').map(Number);
+          return mb !== ma ? ma - mb : da - db;
+        });
+        barVolumeDia.data.labels = datasOrdenadas;
+        barVolumeDia.data.datasets[0].data = datasOrdenadas.map(d => volumePorDia[d]);
+        barVolumeDia.update();
+
+        // Histograma de Volume Corrigido
+        const hist = gerarHistograma(volumes, 8);
+        histVolume.data.labels = hist.labels;
+        histVolume.data.datasets[0].data = hist.dados;
+        histVolume.update();
+
+        // Exportar CSV
+        document.getElementById('btnExportar').onclick = () => exportarCSV(dados);
 
       } catch (err) {
         console.error('Erro ao atualizar gráficos:', err);
