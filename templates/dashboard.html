@@ -17,7 +17,7 @@
     </div>
     <div class="bg-white rounded shadow p-6 text-center">
       <h2 class="text-xl font-semibold text-blue-600 mb-2">Pressão Atual</h2>
-      <p id="pressaoAtual" class="text-4xl font-bold text-blue-600">-- bar</p>
+      <p id="pressaoAtual1" class="text-4xl font-bold text-blue-600">-- bar</p>
     </div>
     <div class="bg-white rounded shadow p-6 text-center">
       <h2 class="text-xl font-semibold text-green-600 mb-2">Volume Total Corrigido</h2>
@@ -255,7 +255,7 @@
         }
 
         document.getElementById('tempAtual').textContent = temperaturas.at(-1).toFixed(2) + ' °C';
-        document.getElementById('pressaoAtual').textContent = pressaoBar.at(-1).toFixed(3) + ' bar';
+        document.getElementById('pressaoAtual1').textContent = pressaoBar.at(-1).toFixed(3) + ' bar';
         document.getElementById('volumeTotal').textContent = volumeTotal.toFixed(2) + ' Nm³';
 
         // Inicializa gráficos se necessário
