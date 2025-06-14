@@ -255,7 +255,9 @@
         }
         const ultimaPressaoBar = pressaoBar[pressaoBar.length - 1];
         document.getElementById('tempAtual').textContent = temperaturas.at(-1).toFixed(2) + ' °C';
-        document.getElementById('pressaoAtual').textContent =ultimaPressaoBar.toFixed(3) + ' bar';
+        console.log("Atualizando pressaoAtual:", ultimaPressaoBar);
+        const el = document.getElementById('pressaoAtual');
+        if (el) el.textContent = ultimaPressaoBar.toFixed(3) + ' bar';
         document.getElementById('volumeTotal').textContent = volumeTotal.toFixed(2) + ' Nm³';
 
         // Inicializa gráficos se necessário
