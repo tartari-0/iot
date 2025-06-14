@@ -185,7 +185,7 @@
       });
     }
 
-    function paParaBar(pa) { return pa / 100000; }
+
 
     function dataLegivel(iso) {
       const d = new Date(iso);
@@ -231,99 +231,95 @@
       document.body.removeChild(link);
     }
 
-    async function atualizarGraficos() {
-      try {
-        const res = await fetch('/api/dados');
-        const data = await res.json();
+async function atualizarGraficos() {
+    try {
+      const res = await fetch('/api/dados');
+      const data = await res.json();
 
-        const dados = data.dados;
-        const volumeTotal = data.volume_total_corrigido;
+      const dados = data.dados;
+      const volumeTotal = data.volume_total_corrigido;
 
-        if (dados.length === 0) return;
+      if (dados.length === 0) return;
 
-        // Datas formatadas
-        const timestamps = dados.map(d => dataLegivel(d.timestamp));
-        const temperaturas = dados.map(d => d.temperatura);
-        const pressaoBar = dados.map(d => paParaBar(d.pressao));
-        const volumes = [];
+      // Datas formatadas
+      const timestamps = dados.map(d => dataLegivel(d.timestamp));
+      const temperaturas = dados.map(d => d.temperatura);
+      const pressaoPsi = dados.map(d => d.pressao); // Mantém em PSI
+      const volumes = [];
 
-        const VOLUME = 1, PATM = 1, STD_PATM = 1, STD_TEMP = 20;
-        for (let i = 0; i < dados.length; i++) {
-          const vol = (VOLUME * (pressaoBar[i] + PATM * 1.01325) * (STD_TEMP + 273.15)) /
-                      ((temperaturas[i] + 273.15) * (STD_PATM * 1.01325));
-          volumes.push(vol);
-        }
-        const ultimaPressaoBar = pressaoBar[pressaoBar.length - 1];
-        document.getElementById('tempAtual').textContent = temperaturas.at(-1).toFixed(2) + ' °C';
-        console.log("Atualizando pressaoAtual:", ultimaPressaoBar);
-        const el = document.getElementById('pressaoAtual');
-        if (el) el.textContent = ultimaPressaoBar.toFixed(3) + ' bar';
-        document.getElementById('volumeTotal').textContent = volumeTotal.toFixed(2) + ' Nm³';
-
-        // Inicializa gráficos se necessário
-        if (!tempChart) tempChart = criarGrafico('tempChart', 'Temperatura', 'rgb(239,68,68)', '°C');
-        if (!pressChart) pressChart = criarGrafico('pressChart', 'Pressão', 'rgb(59,130,246)', 'bar');
-        if (!volChart) volChart = criarGrafico('volChart', 'Volume Corrigido', 'rgb(34,197,94)', 'Nm³/h');
-        if (!scatterTempVol) scatterTempVol = criarScatter('scatterTempVol', 'Temperatura x Volume', 'rgba(239,68,68,0.7)', 'Temperatura (°C)', 'Volume Corrigido (Nm³/h)');
-        if (!scatterPressVol) scatterPressVol = criarScatter('scatterPressVol', 'Pressão x Volume', 'rgba(59,130,246,0.7)', 'Pressão (bar)', 'Volume Corrigido (Nm³/h)');
-        if (!scatterPressTemp) scatterPressTemp = criarScatter('scatterPressTemp', 'Pressão x Temperatura', 'rgba(246,191,59,0.7)', 'Pressão (bar)', 'Temperatura (°C)');
-        if (!barVolumeDia) barVolumeDia = criarBarra('barVolumeDia', 'Volume Corrigido por Dia', 'rgba(34,197,94,0.7)', 'Nm³/h');
-        if (!histVolume) histVolume = criarHistograma('histVolume', 'Histograma Volume Corrigido', 'rgba(34,197,94,0.7)');
-
-        // Atualiza gráficos de linha
-        tempChart.data.labels = timestamps;
-        tempChart.data.datasets[0].data = temperaturas;
-        tempChart.update();
-
-        pressChart.data.labels = timestamps;
-        pressChart.data.datasets[0].data = pressaoBar;
-        pressChart.update();
-
-        volChart.data.labels = timestamps;
-        volChart.data.datasets[0].data = volumes;
-        volChart.update();
-
-        // Scatter: Temperatura x Volume Corrigido
-        scatterTempVol.data.datasets[0].data = temperaturas.map((t, i) => ({ x: t, y: volumes[i] }));
-        scatterTempVol.update();
-
-        // Scatter: Pressão x Volume Corrigido
-        scatterPressVol.data.datasets[0].data = pressaoBar.map((p, i) => ({ x: p, y: volumes[i] }));
-        scatterPressVol.update();
-
-        // Scatter: Pressão x Temperatura
-        scatterPressTemp.data.datasets[0].data = pressaoBar.map((p, i) => ({ x: p, y: temperaturas[i] }));
-        scatterPressTemp.update();
-
-        // Gráfico de barras: Volume Corrigido por dia (datas dd/MM)
-        const volumePorDia = {};
-        for (let i = 0; i < dados.length; i++) {
-          const dia = dataDDMM(dados[i].timestamp);
-          if (!volumePorDia[dia]) volumePorDia[dia] = 0;
-          volumePorDia[dia] += volumes[i];
-        }
-        const datasOrdenadas = Object.keys(volumePorDia).sort((a, b) => {
-          const [da, ma] = a.split('/').map(Number);
-          const [db, mb] = b.split('/').map(Number);
-          return mb !== ma ? ma - mb : da - db;
-        });
-        barVolumeDia.data.labels = datasOrdenadas;
-        barVolumeDia.data.datasets[0].data = datasOrdenadas.map(d => volumePorDia[d]);
-        barVolumeDia.update();
-
-        // Histograma de Volume Corrigido
-        const hist = gerarHistograma(volumes, 8);
-        histVolume.data.labels = hist.labels;
-        histVolume.data.datasets[0].data = hist.dados;
-        histVolume.update();
-
-        // Exportar CSV
-        document.getElementById('btnExportar').onclick = () => exportarCSV(dados);
-
-      } catch (err) {
-        console.error('Erro ao atualizar gráficos:', err);
+      // Ajuste do volume (mantido como estava)
+      const VOLUME = 1, PATM = 1, STD_PATM = 1, STD_TEMP = 20;
+      for (let i = 0; i < dados.length; i++) {
+        const vol = (VOLUME * (pressaoPsi[i] + PATM * 14.7) * (STD_TEMP + 273.15)) /
+                    ((temperaturas[i] + 273.15) * (STD_PATM * 14.7));
+        volumes.push(vol);
       }
+
+      document.getElementById('tempAtual').textContent = temperaturas.at(-1).toFixed(2) + ' °C';
+      document.getElementById('pressaoAtual').textContent = pressaoPsi.at(-1).toFixed(2) + ' psi';
+      document.getElementById('volumeTotal').textContent = volumeTotal.toFixed(2) + ' Nm³';
+
+      // Inicializa gráficos se necessário
+      if (!tempChart) tempChart = criarGrafico('tempChart', 'Temperatura', 'rgb(239,68,68)', '°C');
+      if (!pressChart) pressChart = criarGrafico('pressChart', 'Pressão', 'rgb(59,130,246)', 'psi');
+      if (!volChart) volChart = criarGrafico('volChart', 'Volume Corrigido', 'rgb(34,197,94)', 'Nm³/h');
+
+      if (!scatterTempVol) scatterTempVol = criarScatter('scatterTempVol', 'Temperatura x Volume', 'rgba(239,68,68,0.7)', 'Temperatura (°C)', 'Volume Corrigido (Nm³/h)');
+      if (!scatterPressVol) scatterPressVol = criarScatter('scatterPressVol', 'Pressão x Volume', 'rgba(59,130,246,0.7)', 'Pressão (psi)', 'Volume Corrigido (Nm³/h)');
+      if (!scatterPressTemp) scatterPressTemp = criarScatter('scatterPressTemp', 'Pressão x Temperatura', 'rgba(246,191,59,0.7)', 'Pressão (psi)', 'Temperatura (°C)');
+
+      if (!barVolumeDia) barVolumeDia = criarBarra('barVolumeDia', 'Volume Corrigido por Dia', 'rgba(34,197,94,0.7)', 'Nm³/h');
+      if (!histVolume) histVolume = criarHistograma('histVolume', 'Histograma Volume Corrigido', 'rgba(34,197,94,0.7)');
+
+      // Atualiza gráficos
+      tempChart.data.labels = timestamps;
+      tempChart.data.datasets[0].data = temperaturas;
+      tempChart.update();
+
+      pressChart.data.labels = timestamps;
+      pressChart.data.datasets[0].data = pressaoPsi;
+      pressChart.update();
+
+      volChart.data.labels = timestamps;
+      volChart.data.datasets[0].data = volumes;
+      volChart.update();
+
+      scatterTempVol.data.datasets[0].data = temperaturas.map((t, i) => ({ x: t, y: volumes[i] }));
+      scatterTempVol.update();
+
+      scatterPressVol.data.datasets[0].data = pressaoPsi.map((p, i) => ({ x: p, y: volumes[i] }));
+      scatterPressVol.update();
+
+      scatterPressTemp.data.datasets[0].data = pressaoPsi.map((p, i) => ({ x: p, y: temperaturas[i] }));
+      scatterPressTemp.update();
+
+      // Volume por dia
+      const volumePorDia = {};
+      for (let i = 0; i < dados.length; i++) {
+        const dia = dataDDMM(dados[i].timestamp);
+        if (!volumePorDia[dia]) volumePorDia[dia] = 0;
+        volumePorDia[dia] += volumes[i];
+      }
+      const datasOrdenadas = Object.keys(volumePorDia).sort((a, b) => {
+        const [da, ma] = a.split('/').map(Number);
+        const [db, mb] = b.split('/').map(Number);
+        return mb !== ma ? ma - mb : da - db;
+      });
+      barVolumeDia.data.labels = datasOrdenadas;
+      barVolumeDia.data.datasets[0].data = datasOrdenadas.map(d => volumePorDia[d]);
+      barVolumeDia.update();
+
+      const hist = gerarHistograma(volumes, 8);
+      histVolume.data.labels = hist.labels;
+      histVolume.data.datasets[0].data = hist.dados;
+      histVolume.update();
+
+      // Botão exportar
+      document.getElementById('btnExportar').onclick = () => exportarCSV(dados);
+    } catch (err) {
+      console.error('Erro ao atualizar gráficos:', err);
     }
+  }
 
     atualizarGraficos();
     setInterval(atualizarGraficos, 2000);
